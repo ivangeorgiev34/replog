@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../replog.Core/replog.Core.csproj" />
+  <Project Path="../replog.Data/replog.Data.csproj" />
+  <Project Path="replog.csproj" />
+</Solution>

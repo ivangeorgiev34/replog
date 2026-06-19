@@ -1,0 +1,29 @@
+﻿@using replog.Models.Home
+@model IEnumerable<ReportItemViewModel>
+
+<div class="d-flex flex-wrap row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    @foreach (var report in Model)
+    {
+        <div class="col d-flex">
+            <div class="card h-100 w-100 shadow-sm border-1 d-flex flex-column">
+                <div class="card-body flex-grow-1">
+                    <h5 class="card-title text-dark fw-bold mb-2">@report.Title</h5>
+                    <p class="card-text text-muted small" style="white-space: pre-line;">
+                        @report.Description
+                    </p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 p-3 mt-auto">
+                    <div class="d-flex gap-2">
+                        <form action="/report/complete" method="post" class="flex-grow-1 m-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@report.Id" />
+                            <button type="submit" class="btn btn-success btn-sm w-100">
+                                <i class="bi bi-check2-circle me-1"></i> Complete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

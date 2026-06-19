@@ -1,0 +1,164 @@
+﻿@using replog.Models.Workout
+@model CreateWorkoutViewModel
+
+@{
+    ViewData["Title"] = "Create Workout";
+    var availableExercises = ViewBag.AvailableExercises as List<SelectListItem> ?? new List<SelectListItem>();
+}
+
+<div class="container mt-4" style="max-width: 800px;">
+    <h2>Create New Workout</h2>
+    <hr />
+
+    <form asp-action="Create" method="post" id="workoutForm">
+
+        <h3 class="mt-4">Exercises</h3>
+
+        <div class="card p-3 mb-4 bg-light">
+            <label class="form-label font-weight-bold">Add Exercise to Workout</label>
+            <div class="d-flex gap-2">
+                <select id="exerciseDropdown" class="form-select" asp-items="availableExercises">
+                    <option value="">-- Select an Exercise --</option>
+                </select>
+                <button type="button" id="addExerciseBtn" class="btn btn-primary">Add Exercise</button>
+            </div>
+        </div>
+
+        <div id="exercisesContainer" class="mb-4">
+        </div>
+
+        <button type="submit" class="btn btn-success btn-lg w-100">Save Workout</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        let exerciseIndex = 0;
+
+        document.getElementById('addExerciseBtn').addEventListener('click', function () {
+            const dropdown = document.getElementById('exerciseDropdown');
+            const exerciseId = dropdown.value;
+            const exerciseName = dropdown.options[dropdown.selectedIndex].text;
+
+            if (!exerciseId) {
+                alert('Please select an exercise first.');
+                return;
+            }
+
+            const container = document.getElementById('exercisesContainer');
+
+            // HTML Template for a new exercise block
+            const exerciseHtml = `
+                <div class="card mb-3 exercise-block" data-index="${exerciseIndex}">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-secondary text-white">
+                        <h5 class="mb-0">${exerciseName}</h5>
+                        <input type="hidden" name="Exercises[${exerciseIndex}].ExerciseId" value="${exerciseId}" />
+                        <button type="button" class="btn btn-sm btn-danger remove-exercise-btn">Remove Exercise</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <thead>
+                                TR>
+                                    <th>Set</th>
+                                    <th>Weight (kg/lbs)</th>
+                                    <th>Reps</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="sets-container" data-set-index="0">
+                                </tbody>
+                        </table>
+                        <button type="button" class="btn btn-sm btn-outline-secondary add-set-btn">+ Add Set</button>
+                    </div>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', exerciseHtml);
+
+            // Automatically add the first set for convenience
+            const newlyAddedBlock = container.lastElementChild;
+            addSetToExercise(newlyAddedBlock);
+
+            exerciseIndex++;
+            dropdown.value = ""; // Reset dropdown
+        });
+
+        // Event Delegation for handling dynamic button clicks inside the container
+        document.getElementById('exercisesContainer').addEventListener('click', function (e) {
+            // Handle Remove Exercise
+            if (e.target.classList.contains('remove-exercise-btn')) {
+                e.target.closest('.exercise-block').remove();
+                reIndexExercises();
+            }
+
+            // Handle Add Set
+            if (e.target.classList.contains('add-set-btn')) {
+                const exerciseBlock = e.target.closest('.exercise-block');
+                addSetToExercise(exerciseBlock);
+            }
+
+            // Handle Remove Set
+            if (e.target.classList.contains('remove-set-btn')) {
+                const row = e.target.closest('tr');
+                const exerciseBlock = e.target.closest('.exercise-block');
+                row.remove();
+                reIndexSets(exerciseBlock);
+            }
+        });
+
+        function addSetToExercise(exerciseBlock) {
+            const exerciseIdx = exerciseBlock.getAttribute('data-index');
+            const setsContainer = exerciseBlock.querySelector('.sets-container');
+            let setIdx = parseInt(setsContainer.getAttribute('data-set-index'));
+
+            const setHtml = `
+                <tr>
+                    <td class="set-number align-middle">${setIdx + 1}</td>
+                    <td>
+                        <input type="number" name="Exercises[${exerciseIdx}].Sets[${setIdx}].Weight" class="form-control form-control-sm" step="0.25" placeholder="0" required />
+                    </td>
+                    <td>
+                        <input type="number" name="Exercises[${exerciseIdx}].Sets[${setIdx}].Reps" class="form-control form-control-sm" placeholder="0" required />
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-set-btn">&times;</button>
+                    </td>
+                </tr>
+            `;
+
+            setsContainer.insertAdjacentHTML('beforeend', setHtml);
+            setsContainer.setAttribute('data-set-index', setIdx + 1);
+        }
+
+        // Fixes sequential indexing if an item is removed before submission
+        function reIndexExercises() {
+            const blocks = document.querySelectorAll('.exercise-block');
+            exerciseIndex = 0;
+            blocks.forEach((block, idx) => {
+                block.setAttribute('data-index', idx);
+                block.querySelector('input[name*=".ExerciseId"]').name = `Exercises[${idx}].ExerciseId`;
+
+                // Re-index sets belonging to this specific exercise
+                const setRows = block.querySelectorAll('.sets-container tr');
+                setRows.forEach((row, setIdx) => {
+                    row.querySelector('input[name*=".Weight"]').name = `Exercises[${idx}].Sets[${setIdx}].Weight`;
+                    row.querySelector('input[name*=".Reps"]').name = `Exercises[${idx}].Sets[${setIdx}].Reps`;
+                });
+                exerciseIndex = idx + 1;
+            });
+        }
+
+        function reIndexSets(exerciseBlock) {
+            const exerciseIdx = exerciseBlock.getAttribute('data-index');
+            const setsContainer = exerciseBlock.querySelector('.sets-container');
+            const rows = setsContainer.querySelectorAll('tr');
+
+            rows.forEach((row, setIdx) => {
+                row.querySelector('.set-number').innerText = setIdx + 1;
+                row.querySelector('input[name*=".Weight"]').name = `Exercises[${exerciseIdx}].Sets[${setIdx}].Weight`;
+                row.querySelector('input[name*=".Reps"]').name = `Exercises[${exerciseIdx}].Sets[${setIdx}].Reps`;
+            });
+            setsContainer.setAttribute('data-set-index', rows.length);
+        }
+    </script>
+}

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    user: root
+    container_name: replog_sql_server
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=<Password>
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql/data
+      - sql_log:/var/opt/mssql/log
+    networks:
+      - app_network
+    restart: always
+
+  web_app:
+    image: replog-app:latest
+    container_name: replog_web_mvc
+    build:
+      context: .
+      dockerfile: ./replog/Dockerfile
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    ports:
+      - "8080:80"
+    depends_on:
+      - database
+    networks:
+      - app_network
+    restart: always
+
+volumes:
+  sql_data:
+  sql_log:
+
+networks:
+  app_network:
+    driver: bridge
